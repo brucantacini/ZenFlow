@@ -1,0 +1,59 @@
+package com.example.ZenFlow.service;
+
+import com.example.ZenFlow.entity.Departamento;
+import com.example.ZenFlow.repository.DepartamentoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+
+@Service
+@Transactional
+public class DepartamentoService {
+
+    @Autowired
+    private DepartamentoRepository departamentoRepository;
+
+    public Page<Departamento> listar(Pageable pageable) {
+        return departamentoRepository.findAll(pageable);
+    }
+
+    public Optional<Departamento> buscarPorId(Long id) {
+        return departamentoRepository.findById(id);
+    }
+
+    public Page<Departamento> buscarPorNome(String nome, Pageable pageable) {
+        return departamentoRepository.findByNomeDeptoContainingIgnoreCase(nome, pageable);
+    }
+
+    public Page<Departamento> buscarPorDescricao(String descricao, Pageable pageable) {
+        return departamentoRepository.findByDescricaoContaining(descricao, pageable);
+    }
+
+    public Departamento criar(Departamento departamento) {
+        return departamentoRepository.save(departamento);
+    }
+
+    public Departamento atualizar(Long id, Departamento departamentoAtualizado) {
+        Departamento departamento = departamentoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Departamento não encontrado"));
+
+        if (departamentoAtualizado.getNomeDepto() != null) {
+            departamento.setNomeDepto(departamentoAtualizado.getNomeDepto());
+        }
+        departamento.setDescricao(departamentoAtualizado.getDescricao());
+
+        return departamentoRepository.save(departamento);
+    }
+
+    public void deletar(Long id) {
+        if (!departamentoRepository.existsById(id)) {
+            throw new IllegalArgumentException("Departamento não encontrado");
+        }
+        departamentoRepository.deleteById(id);
+    }
+}
+
