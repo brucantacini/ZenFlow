@@ -1,5 +1,8 @@
 package com.example.ZenFlow.controller;
 
+import com.example.ZenFlow.dto.DepartamentoRequestDTO;
+import com.example.ZenFlow.dto.DepartamentoResponseDTO;
+import com.example.ZenFlow.dto.mapper.DepartamentoMapper;
 import com.example.ZenFlow.entity.Departamento;
 import com.example.ZenFlow.service.DepartamentoService;
 import jakarta.validation.Valid;
@@ -19,46 +22,56 @@ import org.springframework.web.bind.annotation.*;
 public class DepartamentoController {
 
     private final DepartamentoService departamentoService;
+    private final DepartamentoMapper departamentoMapper;
 
     @GetMapping
-    public ResponseEntity<Page<Departamento>> listar(@PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(departamentoService.listar(pageable));
+    public ResponseEntity<Page<DepartamentoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Departamento> departamentos = departamentoService.listar(pageable);
+        Page<DepartamentoResponseDTO> dtos = departamentos.map(departamentoMapper::toResponseDTO);
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Departamento> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<DepartamentoResponseDTO> buscarPorId(@PathVariable Long id) {
         return departamentoService.buscarPorId(id)
+                .map(departamentoMapper::toResponseDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<Page<Departamento>> buscarPorFiltro(
+    public ResponseEntity<Page<DepartamentoResponseDTO>> buscarPorFiltro(
             @RequestParam(required = false) String nome,
             @RequestParam(required = false) String descricao,
             @PageableDefault(size = 10) Pageable pageable) {
 
+        Page<Departamento> departamentos;
+        
         if (nome != null && !nome.isBlank()) {
-            return ResponseEntity.ok(departamentoService.buscarPorNome(nome, pageable));
+            departamentos = departamentoService.buscarPorNome(nome, pageable);
+        } else if (descricao != null && !descricao.isBlank()) {
+            departamentos = departamentoService.buscarPorDescricao(descricao, pageable);
+        } else {
+            return ResponseEntity.badRequest().build();
         }
 
-        if (descricao != null && !descricao.isBlank()) {
-            return ResponseEntity.ok(departamentoService.buscarPorDescricao(descricao, pageable));
-        }
-
-        return ResponseEntity.badRequest().build();
+        Page<DepartamentoResponseDTO> dtos = departamentos.map(departamentoMapper::toResponseDTO);
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping
-    public ResponseEntity<Departamento> criar(@RequestBody @Valid Departamento departamento) {
+    public ResponseEntity<DepartamentoResponseDTO> criar(@RequestBody @Valid DepartamentoRequestDTO dto) {
+        Departamento departamento = departamentoMapper.toEntity(dto);
         Departamento criado = departamentoService.criar(departamento);
-        return ResponseEntity.status(HttpStatus.CREATED).body(criado);
+        return ResponseEntity.status(HttpStatus.CREATED).body(departamentoMapper.toResponseDTO(criado));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Departamento> atualizar(@PathVariable Long id,
-                                                  @RequestBody @Valid Departamento departamento) {
-        return ResponseEntity.ok(departamentoService.atualizar(id, departamento));
+    public ResponseEntity<DepartamentoResponseDTO> atualizar(@PathVariable Long id,
+                                                              @RequestBody @Valid DepartamentoRequestDTO dto) {
+        Departamento departamento = departamentoMapper.toEntity(dto);
+        Departamento atualizado = departamentoService.atualizar(id, departamento);
+        return ResponseEntity.ok(departamentoMapper.toResponseDTO(atualizado));
     }
 
     @DeleteMapping("/{id}")
