@@ -68,10 +68,16 @@ public class AvaliacaoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Buscar avaliações por departamento", description = "Retorna avaliações de um departamento específico")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}")
     public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorDepartamento(
-            @PathVariable Long idDepto,
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto,
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
             @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
             @RequestParam(required = false, defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorDepartamento(idDepto, pageable);
@@ -79,10 +85,16 @@ public class AvaliacaoController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Buscar avaliações por nível de estresse", description = "Retorna avaliações com um nível de estresse específico")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping("/nivel/{nivel}")
     public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorNivel(
-            @PathVariable Integer nivel,
+            @Parameter(description = "Nível de estresse (1 a 5)") @PathVariable Integer nivel,
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
             @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
             @RequestParam(required = false, defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorNivelEstresse(nivel, pageable);
@@ -135,13 +147,23 @@ public class AvaliacaoController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Calcular média de estresse por departamento", description = "Calcula a média de estresse de um departamento")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Média calculada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}/media")
-    public ResponseEntity<Double> calcularMedia(@PathVariable Long idDepto) {
+    public ResponseEntity<Double> calcularMedia(
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto) {
         return ResponseEntity.ok(avaliacaoService.calcularMediaEstressePorDepartamento(idDepto));
     }
 
+    @Operation(summary = "Contar avaliações por departamento", description = "Retorna o total de avaliações de um departamento")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contagem realizada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}/total")
-    public ResponseEntity<Long> contarPorDepartamento(@PathVariable Long idDepto) {
+    public ResponseEntity<Long> contarPorDepartamento(
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto) {
         return ResponseEntity.ok(avaliacaoService.contarAvaliacoesPorDepartamento(idDepto));
     }
     
@@ -161,8 +183,13 @@ public class AvaliacaoController {
         return ResponseEntity.ok(avaliacaoService.calcularMediaSemanalViaFunction(idDepto, inicioDateTime, fimDateTime));
     }
     
+    @Operation(summary = "Validar nível de estresse", description = "Valida se um nível de estresse é válido usando função Oracle")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Validação realizada com sucesso")
+    })
     @GetMapping("/validar-nivel/{nivel}")
-    public ResponseEntity<String> validarNivelEstresse(@PathVariable Integer nivel) {
+    public ResponseEntity<String> validarNivelEstresse(
+            @Parameter(description = "Nível de estresse a validar (1 a 5)") @PathVariable Integer nivel) {
         return ResponseEntity.ok(avaliacaoService.validarNivelEstresseViaFunction(nivel));
     }
     
@@ -213,9 +240,16 @@ public class AvaliacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
     }
 
+    @Operation(summary = "Atualizar avaliação", description = "Atualiza uma avaliação existente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Avaliação atualizada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Avaliação não encontrada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     @PutMapping("/{id}")
-    public ResponseEntity<AvaliacaoResponseDTO> atualizar(@PathVariable Long id,
-                                                          @RequestBody @Valid AvaliacaoRequestDTO dto) {
+    public ResponseEntity<AvaliacaoResponseDTO> atualizar(
+            @Parameter(description = "ID da avaliação") @PathVariable Long id,
+            @RequestBody @Valid AvaliacaoRequestDTO dto) {
         Avaliacao avaliacao = new Avaliacao();
         Departamento departamento = new Departamento();
         departamento.setIdDepto(dto.getIdDepartamento());
@@ -230,8 +264,14 @@ public class AvaliacaoController {
         return ResponseEntity.ok(avaliacaoMapper.toResponseDTO(atualizada));
     }
 
+    @Operation(summary = "Deletar avaliação", description = "Remove uma avaliação do sistema")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Avaliação deletada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+    public ResponseEntity<Void> deletar(
+            @Parameter(description = "ID da avaliação") @PathVariable Long id) {
         avaliacaoService.deletarAvaliacao(id);
         return ResponseEntity.noContent().build();
     }
