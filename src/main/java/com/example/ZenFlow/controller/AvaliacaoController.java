@@ -21,12 +21,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/avaliacoes")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Avaliações", description = "API para gerenciamento de avaliações de bem-estar")
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
@@ -34,6 +43,10 @@ public class AvaliacaoController {
     private final DepartamentoRepository departamentoRepository;
     private final NivelEstresseRepository nivelEstresseRepository;
 
+    @Operation(summary = "Listar avaliações", description = "Retorna uma lista paginada de todas as avaliações")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping
     public ResponseEntity<Page<AvaliacaoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
         Page<Avaliacao> avaliacoes = avaliacaoService.listarAvaliacoes(pageable);
@@ -41,8 +54,14 @@ public class AvaliacaoController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Buscar avaliação por ID", description = "Retorna uma avaliação específica pelo ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Avaliação encontrada"),
+            @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<AvaliacaoResponseDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<AvaliacaoResponseDTO> buscarPorId(
+            @Parameter(description = "ID da avaliação") @PathVariable Long id) {
         return avaliacaoService.buscarPorId(id)
                 .map(avaliacaoMapper::toResponseDTO)
                 .map(ResponseEntity::ok)
@@ -126,6 +145,12 @@ public class AvaliacaoController {
         return ResponseEntity.ok(avaliacaoService.contarRegistrosPeriodoViaFunction(idDepto, dataInicio, dataFim));
     }
 
+    @Operation(summary = "Criar avaliação", description = "Cria uma nova avaliação de bem-estar")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso",
+                    content = @Content(schema = @Schema(implementation = AvaliacaoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     @PostMapping
     public ResponseEntity<AvaliacaoResponseDTO> criar(@RequestBody @Valid AvaliacaoRequestDTO dto) {
         Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
@@ -139,9 +164,12 @@ public class AvaliacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
     }
     
-    /**
-     * Cria uma avaliação usando a procedure PC_INSERIR_AVALIACAO
-     */
+    @Operation(summary = "Criar avaliação via Procedure", 
+               description = "Cria uma nova avaliação usando a procedure Oracle PC_INSERIR_AVALIACAO")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso via procedure"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     @PostMapping("/procedure")
     public ResponseEntity<AvaliacaoResponseDTO> criarViaProcedure(@RequestBody @Valid AvaliacaoRequestDTO dto) {
         Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())

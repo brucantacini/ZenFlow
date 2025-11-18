@@ -5,6 +5,11 @@ import com.example.ZenFlow.dto.DepartamentoResponseDTO;
 import com.example.ZenFlow.dto.mapper.DepartamentoMapper;
 import com.example.ZenFlow.entity.Departamento;
 import com.example.ZenFlow.service.DepartamentoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,11 +24,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/departamentos")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Departamentos", description = "API para gerenciamento de departamentos")
 public class DepartamentoController {
 
     private final DepartamentoService departamentoService;
     private final DepartamentoMapper departamentoMapper;
 
+    @Operation(summary = "Listar departamentos", description = "Retorna uma lista paginada de todos os departamentos")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping
     public ResponseEntity<Page<DepartamentoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
         Page<Departamento> departamentos = departamentoService.listar(pageable);
@@ -31,8 +41,14 @@ public class DepartamentoController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Buscar departamento por ID", description = "Retorna um departamento específico pelo ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Departamento encontrado"),
+            @ApiResponse(responseCode = "404", description = "Departamento não encontrado")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<DepartamentoResponseDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<DepartamentoResponseDTO> buscarPorId(
+            @Parameter(description = "ID do departamento") @PathVariable Long id) {
         return departamentoService.buscarPorId(id)
                 .map(departamentoMapper::toResponseDTO)
                 .map(ResponseEntity::ok)
@@ -59,6 +75,11 @@ public class DepartamentoController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Criar departamento", description = "Cria um novo departamento")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Departamento criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     @PostMapping
     public ResponseEntity<DepartamentoResponseDTO> criar(@RequestBody @Valid DepartamentoRequestDTO dto) {
         Departamento departamento = departamentoMapper.toEntity(dto);

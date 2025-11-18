@@ -5,6 +5,10 @@ import com.example.ZenFlow.dto.NivelEstresseResponseDTO;
 import com.example.ZenFlow.dto.mapper.NivelEstresseMapper;
 import com.example.ZenFlow.entity.NivelEstresse;
 import com.example.ZenFlow.service.NivelEstresseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,11 +23,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/niveis-estresse")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Níveis de Estresse", description = "API para gerenciamento de níveis de estresse")
 public class NivelEstresseController {
 
     private final NivelEstresseService nivelEstresseService;
     private final NivelEstresseMapper nivelEstresseMapper;
 
+    @Operation(summary = "Listar níveis de estresse", description = "Retorna uma lista paginada de todos os níveis de estresse")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping
     public ResponseEntity<Page<NivelEstresseResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
         Page<NivelEstresse> niveis = nivelEstresseService.listar(pageable);
@@ -56,6 +65,11 @@ public class NivelEstresseController {
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Criar nível de estresse", description = "Cria um novo nível de estresse")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Nível de estresse criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     @PostMapping
     public ResponseEntity<NivelEstresseResponseDTO> criar(@RequestBody @Valid NivelEstresseRequestDTO dto) {
         NivelEstresse nivelEstresse = nivelEstresseMapper.toEntity(dto);

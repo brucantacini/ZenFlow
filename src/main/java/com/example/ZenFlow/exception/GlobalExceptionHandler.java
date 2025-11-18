@@ -1,6 +1,7 @@
 package com.example.ZenFlow.exception;
 
 import com.example.ZenFlow.dto.ErrorResponseDTO;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestControllerAdvice
+@Hidden
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
