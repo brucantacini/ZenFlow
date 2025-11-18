@@ -17,6 +17,9 @@ public class NivelEstresseService {
 
     @Autowired
     private NivelEstresseRepository nivelEstresseRepository;
+    
+    @Autowired
+    private ProcedureService procedureService;
 
     public Page<NivelEstresse> listar(Pageable pageable) {
         return nivelEstresseRepository.findAll(pageable);
@@ -36,6 +39,22 @@ public class NivelEstresseService {
 
     public NivelEstresse criar(NivelEstresse nivelEstresse) {
         return nivelEstresseRepository.save(nivelEstresse);
+    }
+    
+    /**
+     * Cria um nível de estresse usando a procedure PC_INSERIR_NIVEL_ESTRESSE
+     * @param nivelEstresse Nível de estresse a ser criado
+     * @return Nível de estresse criado com ID retornado pela procedure
+     */
+    public NivelEstresse criarViaProcedure(NivelEstresse nivelEstresse) {
+        Long idGerado = procedureService.inserirNivelEstresse(
+                nivelEstresse.getNivel(),
+                nivelEstresse.getDescricao()
+        );
+        
+        // Buscar o nível de estresse criado pela procedure
+        return nivelEstresseRepository.findById(idGerado)
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", idGerado));
     }
 
     public NivelEstresse atualizar(Long id, NivelEstresse nivelAtualizado) {

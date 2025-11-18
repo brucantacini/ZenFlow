@@ -17,6 +17,9 @@ public class DepartamentoService {
 
     @Autowired
     private DepartamentoRepository departamentoRepository;
+    
+    @Autowired
+    private ProcedureService procedureService;
 
     public Page<Departamento> listar(Pageable pageable) {
         return departamentoRepository.findAll(pageable);
@@ -36,6 +39,22 @@ public class DepartamentoService {
 
     public Departamento criar(Departamento departamento) {
         return departamentoRepository.save(departamento);
+    }
+    
+    /**
+     * Cria um departamento usando a procedure PC_INSERIR_DEPARTAMENTO
+     * @param departamento Departamento a ser criado
+     * @return Departamento criado com ID retornado pela procedure
+     */
+    public Departamento criarViaProcedure(Departamento departamento) {
+        Long idGerado = procedureService.inserirDepartamento(
+                departamento.getNomeDepto(),
+                departamento.getDescricao()
+        );
+        
+        // Buscar o departamento criado pela procedure
+        return departamentoRepository.findById(idGerado)
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", idGerado));
     }
 
     public Departamento atualizar(Long id, Departamento departamentoAtualizado) {

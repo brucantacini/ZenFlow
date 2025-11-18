@@ -28,6 +28,9 @@ public class AvaliacaoService {
     
     @Autowired
     private NivelEstresseRepository nivelEstresseRepository;
+    
+    @Autowired
+    private ProcedureService procedureService;
 
     public Page<Avaliacao> listarAvaliacoes(Pageable pageable) {
         return avaliacaoRepository.findAll(pageable);
@@ -60,6 +63,37 @@ public class AvaliacaoService {
     public Long contarAvaliacoesPorDepartamento(Long idDepto) {
         return avaliacaoRepository.countByDepartamento(idDepto);
     }
+    
+    /**
+     * Calcula a média semanal usando a função FN_CALCULAR_MEDIA_SEMANAL
+     * @param idDepto ID do departamento
+     * @param dataInicio Data de início do período
+     * @param dataFim Data de fim do período
+     * @return Média de estresse calculada pela função
+     */
+    public Double calcularMediaSemanalViaFunction(Long idDepto, LocalDateTime dataInicio, LocalDateTime dataFim) {
+        return procedureService.calcularMediaSemanal(idDepto, dataInicio, dataFim);
+    }
+    
+    /**
+     * Valida um nível de estresse usando a função FN_VALIDAR_NIVEL_ESTRESSE
+     * @param nivel Nível de estresse a validar
+     * @return Mensagem de validação
+     */
+    public String validarNivelEstresseViaFunction(Integer nivel) {
+        return procedureService.validarNivelEstresse(nivel);
+    }
+    
+    /**
+     * Conta registros em um período usando a função FN_CONTAR_REGISTROS_PERIODO
+     * @param idDepto ID do departamento
+     * @param dataInicio Data de início do período
+     * @param dataFim Data de fim do período
+     * @return Total de registros no período
+     */
+    public Long contarRegistrosPeriodoViaFunction(Long idDepto, LocalDateTime dataInicio, LocalDateTime dataFim) {
+        return procedureService.contarRegistrosPeriodo(idDepto, dataInicio, dataFim);
+    }
 
     public Avaliacao criarAvaliacao(Avaliacao avaliacao) {
         // Validações
@@ -91,6 +125,33 @@ public class AvaliacaoService {
         }
         
         return avaliacaoRepository.save(avaliacao);
+    }
+    
+    /**
+     * Cria uma avaliação usando a procedure PC_INSERIR_AVALIACAO
+     * @param avaliacao Avaliação a ser criada
+     * @return Avaliação criada com ID retornado pela procedure
+     */
+    public Avaliacao criarAvaliacaoViaProcedure(Avaliacao avaliacao) {
+        // Validações
+        if (avaliacao.getDepartamento() == null || avaliacao.getDepartamento().getIdDepto() == null) {
+            throw new IllegalArgumentException("Departamento é obrigatório");
+        }
+        
+        if (avaliacao.getNivelEstresse() == null || avaliacao.getNivelEstresse().getIdNivelEstresse() == null) {
+            throw new IllegalArgumentException("Nível de estresse é obrigatório");
+        }
+        
+        // Chamar procedure
+        Long idGerado = procedureService.inserirAvaliacao(
+                avaliacao.getDepartamento().getIdDepto(),
+                avaliacao.getNivelEstresse().getIdNivelEstresse(),
+                avaliacao.getComentario()
+        );
+        
+        // Buscar a avaliação criada pela procedure
+        return avaliacaoRepository.findById(idGerado)
+                .orElseThrow(() -> new EntityNotFoundException("Avaliação", idGerado));
     }
     
     public Avaliacao atualizarAvaliacao(Long id, Avaliacao avaliacaoAtualizada) {

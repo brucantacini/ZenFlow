@@ -95,6 +95,36 @@ public class AvaliacaoController {
     public ResponseEntity<Long> contarPorDepartamento(@PathVariable Long idDepto) {
         return ResponseEntity.ok(avaliacaoService.contarAvaliacoesPorDepartamento(idDepto));
     }
+    
+    /**
+     * Calcula média semanal usando a função FN_CALCULAR_MEDIA_SEMANAL
+     */
+    @GetMapping("/departamento/{idDepto}/media-semanal")
+    public ResponseEntity<Double> calcularMediaSemanal(
+            @PathVariable Long idDepto,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim) {
+        return ResponseEntity.ok(avaliacaoService.calcularMediaSemanalViaFunction(idDepto, dataInicio, dataFim));
+    }
+    
+    /**
+     * Valida nível de estresse usando a função FN_VALIDAR_NIVEL_ESTRESSE
+     */
+    @GetMapping("/validar-nivel/{nivel}")
+    public ResponseEntity<String> validarNivelEstresse(@PathVariable Integer nivel) {
+        return ResponseEntity.ok(avaliacaoService.validarNivelEstresseViaFunction(nivel));
+    }
+    
+    /**
+     * Conta registros em período usando a função FN_CONTAR_REGISTROS_PERIODO
+     */
+    @GetMapping("/departamento/{idDepto}/contar-periodo")
+    public ResponseEntity<Long> contarRegistrosPeriodo(
+            @PathVariable Long idDepto,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim) {
+        return ResponseEntity.ok(avaliacaoService.contarRegistrosPeriodoViaFunction(idDepto, dataInicio, dataFim));
+    }
 
     @PostMapping
     public ResponseEntity<AvaliacaoResponseDTO> criar(@RequestBody @Valid AvaliacaoRequestDTO dto) {
@@ -106,6 +136,22 @@ public class AvaliacaoController {
         
         Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
         Avaliacao criada = avaliacaoService.criarAvaliacao(avaliacao);
+        return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
+    }
+    
+    /**
+     * Cria uma avaliação usando a procedure PC_INSERIR_AVALIACAO
+     */
+    @PostMapping("/procedure")
+    public ResponseEntity<AvaliacaoResponseDTO> criarViaProcedure(@RequestBody @Valid AvaliacaoRequestDTO dto) {
+        Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
+        
+        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
+        
+        Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
+        Avaliacao criada = avaliacaoService.criarAvaliacaoViaProcedure(avaliacao);
         return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
     }
 
