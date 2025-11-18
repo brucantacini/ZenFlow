@@ -3,6 +3,7 @@ package com.example.ZenFlow.service;
 import com.example.ZenFlow.entity.Avaliacao;
 import com.example.ZenFlow.entity.Departamento;
 import com.example.ZenFlow.entity.NivelEstresse;
+import com.example.ZenFlow.exception.EntityNotFoundException;
 import com.example.ZenFlow.repository.AvaliacaoRepository;
 import com.example.ZenFlow.repository.DepartamentoRepository;
 import com.example.ZenFlow.repository.NivelEstresseRepository;
@@ -73,14 +74,14 @@ public class AvaliacaoService {
         // Verificar se departamento existe
         Optional<Departamento> departamento = departamentoRepository.findById(avaliacao.getDepartamento().getIdDepto());
         if (departamento.isEmpty()) {
-            throw new IllegalArgumentException("Departamento não encontrado");
+            throw new EntityNotFoundException("Departamento", avaliacao.getDepartamento().getIdDepto());
         }
         avaliacao.setDepartamento(departamento.get());
         
         // Verificar se nível de estresse existe
         Optional<NivelEstresse> nivelEstresse = nivelEstresseRepository.findById(avaliacao.getNivelEstresse().getIdNivelEstresse());
         if (nivelEstresse.isEmpty()) {
-            throw new IllegalArgumentException("Nível de estresse não encontrado");
+            throw new EntityNotFoundException("Nível de estresse", avaliacao.getNivelEstresse().getIdNivelEstresse());
         }
         avaliacao.setNivelEstresse(nivelEstresse.get());
         
@@ -96,7 +97,7 @@ public class AvaliacaoService {
         Optional<Avaliacao> avaliacaoExistente = avaliacaoRepository.findById(id);
         
         if (avaliacaoExistente.isEmpty()) {
-            throw new IllegalArgumentException("Avaliação não encontrada");
+            throw new EntityNotFoundException("Avaliação", id);
         }
         
         Avaliacao avaliacao = avaliacaoExistente.get();
@@ -107,7 +108,7 @@ public class AvaliacaoService {
                 avaliacaoAtualizada.getNivelEstresse().getIdNivelEstresse()
             );
             if (nivelEstresse.isEmpty()) {
-                throw new IllegalArgumentException("Nível de estresse não encontrado");
+                throw new EntityNotFoundException("Nível de estresse", avaliacaoAtualizada.getNivelEstresse().getIdNivelEstresse());
             }
             avaliacao.setNivelEstresse(nivelEstresse.get());
         }
@@ -121,7 +122,7 @@ public class AvaliacaoService {
     
     public void deletarAvaliacao(Long id) {
         if (!avaliacaoRepository.existsById(id)) {
-            throw new IllegalArgumentException("Avaliação não encontrada");
+            throw new EntityNotFoundException("Avaliação", id);
         }
         avaliacaoRepository.deleteById(id);
     }

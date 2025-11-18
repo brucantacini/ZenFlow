@@ -1,6 +1,7 @@
 package com.example.ZenFlow.service;
 
 import com.example.ZenFlow.entity.NivelEstresse;
+import com.example.ZenFlow.exception.EntityNotFoundException;
 import com.example.ZenFlow.repository.NivelEstresseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -39,7 +40,7 @@ public class NivelEstresseService {
 
     public NivelEstresse atualizar(Long id, NivelEstresse nivelAtualizado) {
         NivelEstresse nivelEstresse = nivelEstresseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Nível de estresse não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", id));
 
         if (nivelAtualizado.getNivel() != null) {
             nivelEstresse.setNivel(nivelAtualizado.getNivel());
@@ -53,7 +54,7 @@ public class NivelEstresseService {
 
     public void deletar(Long id) {
         if (!nivelEstresseRepository.existsById(id)) {
-            throw new IllegalArgumentException("Nível de estresse não encontrado");
+            throw new EntityNotFoundException("Nível de estresse", id);
         }
         nivelEstresseRepository.deleteById(id);
     }

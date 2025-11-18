@@ -6,6 +6,7 @@ import com.example.ZenFlow.dto.mapper.AvaliacaoMapper;
 import com.example.ZenFlow.entity.Avaliacao;
 import com.example.ZenFlow.entity.Departamento;
 import com.example.ZenFlow.entity.NivelEstresse;
+import com.example.ZenFlow.exception.EntityNotFoundException;
 import com.example.ZenFlow.repository.DepartamentoRepository;
 import com.example.ZenFlow.repository.NivelEstresseRepository;
 import com.example.ZenFlow.service.AvaliacaoService;
@@ -98,10 +99,10 @@ public class AvaliacaoController {
     @PostMapping
     public ResponseEntity<AvaliacaoResponseDTO> criar(@RequestBody @Valid AvaliacaoRequestDTO dto) {
         Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new IllegalArgumentException("Departamento não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
         
         NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
-                .orElseThrow(() -> new IllegalArgumentException("Nível de estresse não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
         
         Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
         Avaliacao criada = avaliacaoService.criarAvaliacao(avaliacao);
@@ -112,10 +113,10 @@ public class AvaliacaoController {
     public ResponseEntity<AvaliacaoResponseDTO> atualizar(@PathVariable Long id,
                                                           @RequestBody @Valid AvaliacaoRequestDTO dto) {
         Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new IllegalArgumentException("Departamento não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
         
         NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
-                .orElseThrow(() -> new IllegalArgumentException("Nível de estresse não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
         
         Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
         Avaliacao atualizada = avaliacaoService.atualizarAvaliacao(id, avaliacao);

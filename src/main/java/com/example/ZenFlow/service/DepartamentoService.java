@@ -1,6 +1,7 @@
 package com.example.ZenFlow.service;
 
 import com.example.ZenFlow.entity.Departamento;
+import com.example.ZenFlow.exception.EntityNotFoundException;
 import com.example.ZenFlow.repository.DepartamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -39,7 +40,7 @@ public class DepartamentoService {
 
     public Departamento atualizar(Long id, Departamento departamentoAtualizado) {
         Departamento departamento = departamentoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Departamento não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", id));
 
         if (departamentoAtualizado.getNomeDepto() != null) {
             departamento.setNomeDepto(departamentoAtualizado.getNomeDepto());
@@ -51,7 +52,7 @@ public class DepartamentoService {
 
     public void deletar(Long id) {
         if (!departamentoRepository.existsById(id)) {
-            throw new IllegalArgumentException("Departamento não encontrado");
+            throw new EntityNotFoundException("Departamento", id);
         }
         departamentoRepository.deleteById(id);
     }
