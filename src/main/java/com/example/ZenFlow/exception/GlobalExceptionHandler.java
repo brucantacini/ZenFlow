@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -98,18 +99,41 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponseDTO> handlePropertyReferenceException(
+            PropertyReferenceException ex, WebRequest request) {
+        
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Campo de ordenação inválido: " + ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGenericException(
             Exception ex, WebRequest request) {
         
+        // Em desenvolvimento, mostrar a mensagem real do erro
+        String message = "Ocorreu um erro inesperado. Tente novamente mais tarde.";
+        if (ex.getMessage() != null && !ex.getMessage().isEmpty()) {
+            message = ex.getMessage();
+        }
+        
         ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "Ocorreu um erro inesperado. Tente novamente mais tarde.",
+                message,
                 request.getDescription(false).replace("uri=", "")
         );
         
-        // Log do erro (em produção, usar logger)
+        // Log do erro completo
+        System.err.println("=== ERRO 500 ===");
+        System.err.println("Mensagem: " + ex.getMessage());
+        System.err.println("Causa: " + (ex.getCause() != null ? ex.getCause().getMessage() : "N/A"));
         ex.printStackTrace();
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

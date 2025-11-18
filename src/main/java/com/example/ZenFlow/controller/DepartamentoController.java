@@ -32,10 +32,40 @@ public class DepartamentoController {
 
     @Operation(summary = "Listar departamentos", description = "Retorna uma lista paginada de todos os departamentos")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos")
     })
     @GetMapping
-    public ResponseEntity<Page<DepartamentoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<DepartamentoResponseDTO>> listar(
+            @Parameter(description = "Número da página (começa em 0)", example = "0") @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10") @RequestParam(required = false, defaultValue = "10") int size,
+            @Parameter(description = "Campo para ordenação (ex: idDepto,asc ou nomeDepto,desc)", example = "idDepto,asc") @RequestParam(required = false) String sort) {
+        
+        // Criar Pageable manualmente para evitar problemas com parâmetros inválidos do Swagger
+        Pageable pageable;
+        if (sort != null && !sort.isEmpty() && !sort.equals("[\"string\"]")) {
+            try {
+                String[] sortParams = sort.split(",");
+                if (sortParams.length == 2) {
+                    pageable = org.springframework.data.domain.PageRequest.of(
+                        page, 
+                        size, 
+                        sortParams[1].equalsIgnoreCase("desc") 
+                            ? org.springframework.data.domain.Sort.Direction.DESC 
+                            : org.springframework.data.domain.Sort.Direction.ASC,
+                        sortParams[0]
+                    );
+                } else {
+                    pageable = org.springframework.data.domain.PageRequest.of(page, size);
+                }
+            } catch (Exception e) {
+                // Se houver erro no sort, usar ordenação padrão
+                pageable = org.springframework.data.domain.PageRequest.of(page, size);
+            }
+        } else {
+            pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        }
+        
         Page<Departamento> departamentos = departamentoService.listar(pageable);
         Page<DepartamentoResponseDTO> dtos = departamentos.map(departamentoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
