@@ -42,7 +42,6 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig, DaoAuthenticationProvider authProvider) throws Exception {
-        // Configura o AuthenticationManager com o provider
         return new org.springframework.security.authentication.ProviderManager(java.util.List.of(authProvider));
     }
 

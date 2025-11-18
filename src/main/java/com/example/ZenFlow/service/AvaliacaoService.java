@@ -64,39 +64,35 @@ public class AvaliacaoService {
         return avaliacaoRepository.countByDepartamento(idDepto);
     }
     
-    /**
-     * Calcula a média semanal usando a função FN_CALCULAR_MEDIA_SEMANAL
-     * @param idDepto ID do departamento
-     * @param dataInicio Data de início do período
-     * @param dataFim Data de fim do período
-     * @return Média de estresse calculada pela função
-     */
     public Double calcularMediaSemanalViaFunction(Long idDepto, LocalDateTime dataInicio, LocalDateTime dataFim) {
         return procedureService.calcularMediaSemanal(idDepto, dataInicio, dataFim);
     }
     
-    /**
-     * Valida um nível de estresse usando a função FN_VALIDAR_NIVEL_ESTRESSE
-     * @param nivel Nível de estresse a validar
-     * @return Mensagem de validação
-     */
     public String validarNivelEstresseViaFunction(Integer nivel) {
         return procedureService.validarNivelEstresse(nivel);
     }
     
-    /**
-     * Conta registros em um período usando a função FN_CONTAR_REGISTROS_PERIODO
-     * @param idDepto ID do departamento
-     * @param dataInicio Data de início do período
-     * @param dataFim Data de fim do período
-     * @return Total de registros no período
-     */
     public Long contarRegistrosPeriodoViaFunction(Long idDepto, LocalDateTime dataInicio, LocalDateTime dataFim) {
         return procedureService.contarRegistrosPeriodo(idDepto, dataInicio, dataFim);
     }
 
+    public Avaliacao criarAvaliacao(Long idDepartamento, Long idNivelEstresse, String comentario) {
+        Departamento departamento = departamentoRepository.findById(idDepartamento)
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", idDepartamento));
+        
+        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(idNivelEstresse)
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", idNivelEstresse));
+        
+        Avaliacao avaliacao = new Avaliacao();
+        avaliacao.setDepartamento(departamento);
+        avaliacao.setNivelEstresse(nivelEstresse);
+        avaliacao.setComentario(comentario);
+        avaliacao.setDtAvaliacao(LocalDateTime.now());
+        
+        return avaliacaoRepository.save(avaliacao);
+    }
+    
     public Avaliacao criarAvaliacao(Avaliacao avaliacao) {
-        // Validações
         if (avaliacao.getDepartamento() == null || avaliacao.getDepartamento().getIdDepto() == null) {
             throw new IllegalArgumentException("Departamento é obrigatório");
         }
@@ -105,21 +101,14 @@ public class AvaliacaoService {
             throw new IllegalArgumentException("Nível de estresse é obrigatório");
         }
         
-        // Verificar se departamento existe
-        Optional<Departamento> departamento = departamentoRepository.findById(avaliacao.getDepartamento().getIdDepto());
-        if (departamento.isEmpty()) {
-            throw new EntityNotFoundException("Departamento", avaliacao.getDepartamento().getIdDepto());
-        }
-        avaliacao.setDepartamento(departamento.get());
+        Departamento departamento = departamentoRepository.findById(avaliacao.getDepartamento().getIdDepto())
+                .orElseThrow(() -> new EntityNotFoundException("Departamento", avaliacao.getDepartamento().getIdDepto()));
+        avaliacao.setDepartamento(departamento);
         
-        // Verificar se nível de estresse existe
-        Optional<NivelEstresse> nivelEstresse = nivelEstresseRepository.findById(avaliacao.getNivelEstresse().getIdNivelEstresse());
-        if (nivelEstresse.isEmpty()) {
-            throw new EntityNotFoundException("Nível de estresse", avaliacao.getNivelEstresse().getIdNivelEstresse());
-        }
-        avaliacao.setNivelEstresse(nivelEstresse.get());
+        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(avaliacao.getNivelEstresse().getIdNivelEstresse())
+                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", avaliacao.getNivelEstresse().getIdNivelEstresse()));
+        avaliacao.setNivelEstresse(nivelEstresse);
         
-        // Definir data automaticamente se não informada
         if (avaliacao.getDtAvaliacao() == null) {
             avaliacao.setDtAvaliacao(LocalDateTime.now());
         }
@@ -127,29 +116,8 @@ public class AvaliacaoService {
         return avaliacaoRepository.save(avaliacao);
     }
     
-    /**
-     * Cria uma avaliação usando a procedure PC_INSERIR_AVALIACAO
-     * @param avaliacao Avaliação a ser criada
-     * @return Avaliação criada com ID retornado pela procedure
-     */
-    public Avaliacao criarAvaliacaoViaProcedure(Avaliacao avaliacao) {
-        // Validações
-        if (avaliacao.getDepartamento() == null || avaliacao.getDepartamento().getIdDepto() == null) {
-            throw new IllegalArgumentException("Departamento é obrigatório");
-        }
-        
-        if (avaliacao.getNivelEstresse() == null || avaliacao.getNivelEstresse().getIdNivelEstresse() == null) {
-            throw new IllegalArgumentException("Nível de estresse é obrigatório");
-        }
-        
-        // Chamar procedure
-        Long idGerado = procedureService.inserirAvaliacao(
-                avaliacao.getDepartamento().getIdDepto(),
-                avaliacao.getNivelEstresse().getIdNivelEstresse(),
-                avaliacao.getComentario()
-        );
-        
-        // Buscar a avaliação criada pela procedure
+    public Avaliacao criarAvaliacaoViaProcedure(Long idDepartamento, Long idNivelEstresse, String comentario) {
+        Long idGerado = procedureService.inserirAvaliacao(idDepartamento, idNivelEstresse, comentario);
         return avaliacaoRepository.findById(idGerado)
                 .orElseThrow(() -> new EntityNotFoundException("Avaliação", idGerado));
     }

@@ -13,8 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -37,34 +37,12 @@ public class DepartamentoController {
     })
     @GetMapping
     public ResponseEntity<Page<DepartamentoResponseDTO>> listar(
-            @Parameter(description = "Número da página (começa em 0)", example = "0") @RequestParam(required = false, defaultValue = "0") int page,
-            @Parameter(description = "Tamanho da página", example = "10") @RequestParam(required = false, defaultValue = "10") int size,
-            @Parameter(description = "Campo para ordenação (ex: idDepto,asc ou nomeDepto,desc)", example = "idDepto,asc") @RequestParam(required = false) String sort) {
+            @Parameter(description = "Número da página (começa em 0)", example = "0") 
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10") 
+            @RequestParam(required = false, defaultValue = "10") int size) {
         
-        // Criar Pageable manualmente para evitar problemas com parâmetros inválidos do Swagger
-        Pageable pageable;
-        if (sort != null && !sort.isEmpty() && !sort.equals("[\"string\"]")) {
-            try {
-                String[] sortParams = sort.split(",");
-                if (sortParams.length == 2) {
-                    pageable = org.springframework.data.domain.PageRequest.of(
-                        page, 
-                        size, 
-                        sortParams[1].equalsIgnoreCase("desc") 
-                            ? org.springframework.data.domain.Sort.Direction.DESC 
-                            : org.springframework.data.domain.Sort.Direction.ASC,
-                        sortParams[0]
-                    );
-                } else {
-                    pageable = org.springframework.data.domain.PageRequest.of(page, size);
-                }
-            } catch (Exception e) {
-                // Se houver erro no sort, usar ordenação padrão
-                pageable = org.springframework.data.domain.PageRequest.of(page, size);
-            }
-        } else {
-            pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        }
+        Pageable pageable = PageRequest.of(page, size);
         
         Page<Departamento> departamentos = departamentoService.listar(pageable);
         Page<DepartamentoResponseDTO> dtos = departamentos.map(departamentoMapper::toResponseDTO);
@@ -89,7 +67,10 @@ public class DepartamentoController {
     public ResponseEntity<Page<DepartamentoResponseDTO>> buscarPorFiltro(
             @RequestParam(required = false) String nome,
             @RequestParam(required = false) String descricao,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
 
         Page<Departamento> departamentos;
         

@@ -130,10 +130,7 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
         
-        // Log do erro completo
-        System.err.println("=== ERRO 500 ===");
-        System.err.println("Mensagem: " + ex.getMessage());
-        System.err.println("Causa: " + (ex.getCause() != null ? ex.getCause().getMessage() : "N/A"));
+        // Log do erro (em produção, usar logger apropriado)
         ex.printStackTrace();
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

@@ -6,15 +6,12 @@ import com.example.ZenFlow.dto.mapper.AvaliacaoMapper;
 import com.example.ZenFlow.entity.Avaliacao;
 import com.example.ZenFlow.entity.Departamento;
 import com.example.ZenFlow.entity.NivelEstresse;
-import com.example.ZenFlow.exception.EntityNotFoundException;
-import com.example.ZenFlow.repository.DepartamentoRepository;
-import com.example.ZenFlow.repository.NivelEstresseRepository;
 import com.example.ZenFlow.service.AvaliacaoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +20,13 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @RestController
 @RequestMapping("/api/avaliacoes")
@@ -40,15 +37,18 @@ public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
     private final AvaliacaoMapper avaliacaoMapper;
-    private final DepartamentoRepository departamentoRepository;
-    private final NivelEstresseRepository nivelEstresseRepository;
 
     @Operation(summary = "Listar avaliações", description = "Retorna uma lista paginada de todas as avaliações")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     })
     @GetMapping
-    public ResponseEntity<Page<AvaliacaoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<AvaliacaoResponseDTO>> listar(
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
         Page<Avaliacao> avaliacoes = avaliacaoService.listarAvaliacoes(pageable);
         Page<AvaliacaoResponseDTO> dtos = avaliacoes.map(avaliacaoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
@@ -69,38 +69,68 @@ public class AvaliacaoController {
     }
 
     @GetMapping("/departamento/{idDepto}")
-    public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorDepartamento(@PathVariable Long idDepto,
-                                                                             @PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorDepartamento(
+            @PathVariable Long idDepto,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
         Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorDepartamento(idDepto, pageable);
         Page<AvaliacaoResponseDTO> dtos = avaliacoes.map(avaliacaoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/nivel/{nivel}")
-    public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorNivel(@PathVariable Integer nivel,
-                                                                      @PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorNivel(
+            @PathVariable Integer nivel,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
         Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorNivelEstresse(nivel, pageable);
         Page<AvaliacaoResponseDTO> dtos = avaliacoes.map(avaliacaoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Buscar avaliações por período", description = "Retorna avaliações entre as datas informadas")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping("/periodo")
     public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorPeriodo(
-            @RequestParam("inicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam("fim") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
-            @PageableDefault(size = 10) Pageable pageable) {
-        Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorPeriodo(inicio, fim, pageable);
+            @Parameter(description = "Data de início (formato: yyyy-MM-dd)", example = "2025-11-10", required = true)
+            @RequestParam("inicio") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate inicio,
+            @Parameter(description = "Data de fim (formato: yyyy-MM-dd)", example = "2025-11-18", required = true)
+            @RequestParam("fim") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fim,
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        LocalDateTime inicioDateTime = inicio.atStartOfDay();
+        LocalDateTime fimDateTime = fim.atTime(LocalTime.MAX);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorPeriodo(inicioDateTime, fimDateTime, pageable);
         Page<AvaliacaoResponseDTO> dtos = avaliacoes.map(avaliacaoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
     }
 
+    @Operation(summary = "Buscar avaliações por departamento e período", description = "Retorna avaliações de um departamento entre as datas informadas")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}/periodo")
     public ResponseEntity<Page<AvaliacaoResponseDTO>> buscarPorDepartamentoEPeriodo(
-            @PathVariable Long idDepto,
-            @RequestParam("inicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam("fim") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
-            @PageableDefault(size = 10) Pageable pageable) {
-        Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorDepartamentoEPeriodo(idDepto, inicio, fim, pageable);
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto,
+            @Parameter(description = "Data de início (formato: yyyy-MM-dd)", example = "2025-11-10", required = true)
+            @RequestParam("inicio") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate inicio,
+            @Parameter(description = "Data de fim (formato: yyyy-MM-dd)", example = "2025-11-18", required = true)
+            @RequestParam("fim") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fim,
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        LocalDateTime inicioDateTime = inicio.atStartOfDay();
+        LocalDateTime fimDateTime = fim.atTime(LocalTime.MAX);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Avaliacao> avaliacoes = avaliacaoService.buscarPorDepartamentoEPeriodo(idDepto, inicioDateTime, fimDateTime, pageable);
         Page<AvaliacaoResponseDTO> dtos = avaliacoes.map(avaliacaoMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
     }
@@ -115,52 +145,55 @@ public class AvaliacaoController {
         return ResponseEntity.ok(avaliacaoService.contarAvaliacoesPorDepartamento(idDepto));
     }
     
-    /**
-     * Calcula média semanal usando a função FN_CALCULAR_MEDIA_SEMANAL
-     */
+    @Operation(summary = "Calcular média semanal de estresse", description = "Calcula a média de estresse de um departamento em um período usando função Oracle")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Média calculada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}/media-semanal")
     public ResponseEntity<Double> calcularMediaSemanal(
-            @PathVariable Long idDepto,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim) {
-        return ResponseEntity.ok(avaliacaoService.calcularMediaSemanalViaFunction(idDepto, dataInicio, dataFim));
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto,
+            @Parameter(description = "Data de início (formato: yyyy-MM-dd)", example = "2025-11-10", required = true)
+            @RequestParam("dataInicio") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataInicio,
+            @Parameter(description = "Data de fim (formato: yyyy-MM-dd)", example = "2025-11-18", required = true)
+            @RequestParam("dataFim") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataFim) {
+        LocalDateTime inicioDateTime = dataInicio.atStartOfDay();
+        LocalDateTime fimDateTime = dataFim.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(avaliacaoService.calcularMediaSemanalViaFunction(idDepto, inicioDateTime, fimDateTime));
     }
     
-    /**
-     * Valida nível de estresse usando a função FN_VALIDAR_NIVEL_ESTRESSE
-     */
     @GetMapping("/validar-nivel/{nivel}")
     public ResponseEntity<String> validarNivelEstresse(@PathVariable Integer nivel) {
         return ResponseEntity.ok(avaliacaoService.validarNivelEstresseViaFunction(nivel));
     }
     
-    /**
-     * Conta registros em período usando a função FN_CONTAR_REGISTROS_PERIODO
-     */
+    @Operation(summary = "Contar registros por período", description = "Conta avaliações de um departamento em um período usando função Oracle")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contagem realizada com sucesso")
+    })
     @GetMapping("/departamento/{idDepto}/contar-periodo")
     public ResponseEntity<Long> contarRegistrosPeriodo(
-            @PathVariable Long idDepto,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim) {
-        return ResponseEntity.ok(avaliacaoService.contarRegistrosPeriodoViaFunction(idDepto, dataInicio, dataFim));
+            @Parameter(description = "ID do departamento") @PathVariable Long idDepto,
+            @Parameter(description = "Data de início (formato: yyyy-MM-dd)", example = "2025-11-10", required = true)
+            @RequestParam("dataInicio") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataInicio,
+            @Parameter(description = "Data de fim (formato: yyyy-MM-dd)", example = "2025-11-18", required = true)
+            @RequestParam("dataFim") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataFim) {
+        LocalDateTime inicioDateTime = dataInicio.atStartOfDay();
+        LocalDateTime fimDateTime = dataFim.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(avaliacaoService.contarRegistrosPeriodoViaFunction(idDepto, inicioDateTime, fimDateTime));
     }
 
     @Operation(summary = "Criar avaliação", description = "Cria uma nova avaliação de bem-estar")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso",
-                    content = @Content(schema = @Schema(implementation = AvaliacaoResponseDTO.class))),
+            @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     @PostMapping
     public ResponseEntity<AvaliacaoResponseDTO> criar(@RequestBody @Valid AvaliacaoRequestDTO dto) {
-        Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
-        
-        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
-                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
-        
-        Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
-        Avaliacao criada = avaliacaoService.criarAvaliacao(avaliacao);
+        Avaliacao criada = avaliacaoService.criarAvaliacao(
+                dto.getIdDepartamento(),
+                dto.getIdNivelEstresse(),
+                dto.getComentario()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
     }
     
@@ -172,27 +205,27 @@ public class AvaliacaoController {
     })
     @PostMapping("/procedure")
     public ResponseEntity<AvaliacaoResponseDTO> criarViaProcedure(@RequestBody @Valid AvaliacaoRequestDTO dto) {
-        Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
-        
-        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
-                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
-        
-        Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
-        Avaliacao criada = avaliacaoService.criarAvaliacaoViaProcedure(avaliacao);
+        Avaliacao criada = avaliacaoService.criarAvaliacaoViaProcedure(
+                dto.getIdDepartamento(),
+                dto.getIdNivelEstresse(),
+                dto.getComentario()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(avaliacaoMapper.toResponseDTO(criada));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AvaliacaoResponseDTO> atualizar(@PathVariable Long id,
                                                           @RequestBody @Valid AvaliacaoRequestDTO dto) {
-        Departamento departamento = departamentoRepository.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new EntityNotFoundException("Departamento", dto.getIdDepartamento()));
+        Avaliacao avaliacao = new Avaliacao();
+        Departamento departamento = new Departamento();
+        departamento.setIdDepto(dto.getIdDepartamento());
+        avaliacao.setDepartamento(departamento);
         
-        NivelEstresse nivelEstresse = nivelEstresseRepository.findById(dto.getIdNivelEstresse())
-                .orElseThrow(() -> new EntityNotFoundException("Nível de estresse", dto.getIdNivelEstresse()));
+        NivelEstresse nivelEstresse = new NivelEstresse();
+        nivelEstresse.setIdNivelEstresse(dto.getIdNivelEstresse());
+        avaliacao.setNivelEstresse(nivelEstresse);
+        avaliacao.setComentario(dto.getComentario());
         
-        Avaliacao avaliacao = avaliacaoMapper.toEntity(dto, departamento, nivelEstresse);
         Avaliacao atualizada = avaliacaoService.atualizarAvaliacao(id, avaliacao);
         return ResponseEntity.ok(avaliacaoMapper.toResponseDTO(atualizada));
     }

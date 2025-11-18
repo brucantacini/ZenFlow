@@ -6,14 +6,15 @@ import com.example.ZenFlow.dto.mapper.NivelEstresseMapper;
 import com.example.ZenFlow.entity.NivelEstresse;
 import com.example.ZenFlow.service.NivelEstresseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +35,12 @@ public class NivelEstresseController {
             @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     })
     @GetMapping
-    public ResponseEntity<Page<NivelEstresseResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<NivelEstresseResponseDTO>> listar(
+            @Parameter(description = "Número da página (começa em 0)", example = "0")
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Tamanho da página", example = "10")
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
         Page<NivelEstresse> niveis = nivelEstresseService.listar(pageable);
         Page<NivelEstresseResponseDTO> dtos = niveis.map(nivelEstresseMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);
@@ -59,7 +65,9 @@ public class NivelEstresseController {
     @GetMapping("/buscar")
     public ResponseEntity<Page<NivelEstresseResponseDTO>> buscarPorDescricao(
             @RequestParam String descricao,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
         Page<NivelEstresse> niveis = nivelEstresseService.buscarPorDescricao(descricao, pageable);
         Page<NivelEstresseResponseDTO> dtos = niveis.map(nivelEstresseMapper::toResponseDTO);
         return ResponseEntity.ok(dtos);

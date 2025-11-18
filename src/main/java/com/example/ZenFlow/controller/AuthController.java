@@ -50,9 +50,6 @@ public class AuthController {
 
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
-            // Log do erro para debug
-            System.err.println("Erro de autenticação: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Credenciais inválidas");
         }
