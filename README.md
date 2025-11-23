@@ -10,11 +10,14 @@ Sistema que permite aos funcionários registrarem seus níveis de estresse de fo
 
 ### Gustavo Gonçalves - RM556823
 
+### **Link de deploy**: http://172.200.140.163:8080/swagger-ui/index.html
+
 ## 🎥 Vídeos de Apresentação
 
 🔗 **Link do Vídeo executando projeto java com swagger**: https://youtu.be/yC8XuJ6d-4s
 
 🔗 **Link do Vídeo apresentando sistema completo**: https://youtu.be/DPHlj1m0nOo
+
 
 ### Conteúdo do Vídeo
 
