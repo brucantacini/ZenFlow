@@ -1,0 +1,33 @@
+# Docker Compose para ZenFlow
+# Orquestração da aplicação Spring Boot
+
+version: '3.8'
+
+services:
+  zenflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zenflow-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Perfil Spring Boot (oracle-fiap para produção)
+      - SPRING_PROFILES_ACTIVE=oracle-fiap
+      # Configurações do Oracle Database (ajustar conforme necessário)
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL
+      - SPRING_DATASOURCE_USERNAME=rm560242
+      - SPRING_DATASOURCE_PASSWORD=271005
+      # Configuração JWT (Spring Boot converte automaticamente JWT_SECRET para jwt.secret)
+      - JWT_SECRET=ZenFlowSecretKeyForJWTTokenGeneration2024GlobalSolutionMinimo32Caracteres
+      - JWT_EXPIRATION=86400000
+    restart: unless-stopped
+    networks:
+      - zenflow-network
+    # Executar em background (requisito: projeto em background)
+    # Use: docker-compose up -d
+
+networks:
+  zenflow-network:
+    driver: bridge
+
